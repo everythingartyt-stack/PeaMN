@@ -41,6 +41,7 @@ else:
     ID_ENTRY = "entry.1773581682"
     STATUS_ENTRY = "entry.1603121761"
 
+    # วนลูปแสดงผลรายการทั้งหมด
     for index, row in df.iterrows():
         try:
             job_id = str(row[id_col]).strip()
@@ -68,25 +69,25 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_btn:
-                # กำหนดค่าปลายทางที่จะเปลี่ยนเมื่อกดปุ่มอัปเดตสถานะ
+                # ระบบคำนวณสถานะสลับค่าไปมา
                 if current_status == "เสร็จสิ้น":
                     target_status = "รอดำเนินการ"
-                    success_message = "รอดำเนินการ"
+                    success_message = f"🟢 ลำดับที่ {job_id} เปลี่ยนสถานะเป็น: [รอดำเนินการ] เรียบร้อยแล้ว! (กำลังอัปเดตฐานข้อมูล)"
                 else:
                     target_status = "เสร็จสิ้น"
-                    success_message = "ดำเนินการเสร็จสิ้น!"
+                    success_message = f"🟢 ลำดับที่ {job_id} เปลี่ยนสถานะเป็น: [ดำเนินการเสร็จสิ้น!] เรียบร้อยแล้ว! (กำลังอัปเดตฐานข้อมูล)"
                 
-                # เปลี่ยนชื่อปุ่มเป็น "อัปเดตสถานะ" ตามคำสั่ง
+                # ปุ่มอัปเดตสถานะ
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
-                    with st.spinner("กำลังบันทึกสถานะ..."):
+                    with st.spinner("กำลังส่งข้อมูล..."):
                         payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
                         
-                        # ระบบ Retry ป้องกัน ConnectionError สีแดง
                         for attempt in range(3):
                             try:
                                 requests.post(FORM_URL, data=payload, timeout=5)
-                                st.success(success_message)
-                                time.sleep(1)
+                                # 💡 ค้างกล่องเขียวโชว์สถานะไว้ด้านบนสุดจนกว่าจะกดปิด เพื่อให้เวลา Google ชีตอัปเดตค่า
+                                st.toast(success_message, icon="⚡")
+                                time.sleep(1.5) # หน่วงเวลาให้ Google Sheets บันทึกค่าเรียบร้อย
                                 st.rerun()
                                 break
                             except requests.exceptions.RequestException:
