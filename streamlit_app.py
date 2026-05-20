@@ -10,10 +10,8 @@ st.write("ทุกคนสามารถเข้าดูข้อมูล 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def get_latest_data():
-    # สั่งให้เจาะจงอ่านจากแท็บแรก หรือระบุชื่อแท็บงานหลักของคุณ (เช่น worksheet="Sheet1" หรือชื่อแท็บของคุณ)
-    # ในที่นี้ใส่เป็นแผ่นงานแรกลงไปก่อน เพื่อความถูกต้อง
-    df_raw = conn.read(ttl="0")
-    
+    # บังคับดึงข้อมูลสดใหม่เสมอ (ttl=0)
+    df_raw = conn.read(ttl=0)
     # ล้างช่องว่างที่หัวคอลัมน์ทั้งหมด
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
@@ -26,46 +24,54 @@ except Exception as e:
 
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
-# ถ้าพบว่าดึงมาแล้วไม่มีข้อมูล ให้แจ้งเตือนผู้ใช้
+# ตรวจสอบตัวตารางข้อมูล
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลใน Google Sheets กรุณาตรวจสอบว่ามีข้อมูลอยู่ในแผ่นงานหลักหรือไม่")
+    st.warning("⚠️ ไม่พบข้อมูลใน Google Sheets กรุณาตรวจสอบแท็บหน้างานหลักของคุณ")
 else:
-    # ค้นหาชื่อคอลัมน์ที่แท้จริง
-    id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
-    detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
-    phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
-    status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
+    # ระบุชื่อคอลัมน์ให้ตรงตามภาพถ่ายจริงของคุณ
+    id_col = "ลำดับที่"
+    detail_col = "รายละเอียด"
+    phone_col = "เบอร์โทร"
+    status_col = "สถานะ"
 
-    # 🔗 ลิงก์ฟอร์มของคุณ
+    # ลิงก์ฟอร์มของคุณ
     FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
     ID_ENTRY = "entry.1773581682"
     STATUS_ENTRY = "entry.1603121761"
 
-    # วนลูปแสดงผลรายการทั้งหมด
+    # วนลูปแสดงผลรายการทั้งหมด 1-20
     for index, row in df.iterrows():
-        job_id = row[id_col]
-        
-        # ป้องกันกรณีลำดับที่ไม่มีข้อมูล
-        if str(job_id).strip() == "":
+        # ตรวจสอบว่าคอลัมน์ "ลำดับที่" มีตัวเลขไหม (ดึงเฉพาะแถวที่มีข้อมูลจริง)
+        try:
+            job_id = str(row[id_col]).strip()
+            if job_id == "" or job_id == "nan":
+                continue
+        except:
             continue
             
+        # ดึงสถานะปัจจุบันจากช่อง D
         current_status = str(row[status_col]).strip()
         
-        # คัดกรองสถานะ
+        # จัดการคำและค่าว่าง
         if current_status == "" or current_status == "nan" or current_status == "0":
             current_status = "รอดำเนินการ"
             
         status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ รอดำเนินการ"
         
+        # แสดงผลกล่องข้อมูลแต่ละรายการ
         with st.container():
             col_text, col_btn = st.columns([3, 1])
             with col_text:
                 st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
                 st.write(f"📌 {row[detail_col]}")
-                if str(row[phone_col]) and str(row[phone_col]) != "nan" and str(row[phone_col]) != "0":
-                    st.write(f"📞 เบอร์โทร: {str(row[phone_col])}")
+                
+                # แสดงเบอร์โทร (ถ้ามีข้อมูล)
+                phone_val = str(row[phone_col]).strip()
+                if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
+                    st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_btn:
+                # ตั้งสลับข้อความบนปุ่ม
                 if current_status == "เสร็จสิ้น":
                     btn_label = "⏳ ปรับเป็นรอดำเนินการ"
                     target_status = "รอดำเนินการ"
@@ -77,6 +83,7 @@ else:
                     with st.spinner("กำลังบันทึกสถานะ..."):
                         payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
                         try:
+                            # ส่งสัญญานไปที่ Google Form
                             requests.post(FORM_URL, data=payload)
                             st.success("อัปเดตเรียบร้อย!")
                             st.rerun()
