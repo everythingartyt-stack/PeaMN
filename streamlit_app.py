@@ -40,7 +40,7 @@ else:
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # วนลูปแสดงผลรายการทั้งหมด 1-20
+    # วนลูปแสดงผลรายการ
     for index, row in df.iterrows():
         try:
             job_id = str(row[id_col]).strip()
@@ -51,6 +51,13 @@ else:
         except:
             continue
             
+        job_detail = str(row[detail_col]).strip()
+        phone_val = str(row[phone_col]).strip()
+        
+        # 🎯 ล็อกเงื่อนไข: ถ้าคอลัมน์ B (รายละเอียด) และคอลัมน์ C (เบอร์โทร) ว่างทั้งคู่ หรือเป็นค่าว่างเปล่า จะไม่โชว์บนหน้าเว็บ
+        if (job_detail == "" or job_detail == "nan") and (phone_val == "" or phone_val == "nan" or phone_val == "0.0" or phone_val == "0"):
+            continue
+            
         # ดึงข้อความสถานะในคอลัมน์ D มาตรวจสอบเพื่อใส่สัญลักษณ์วงกลมสี
         current_status = str(row[status_col]).strip()
         
@@ -59,16 +66,12 @@ else:
             status_display = "🟢 แก้ไขแล้ว"
         else:
             status_display = "🔴 ยังไม่แก้ไข"
-            
-        job_detail = str(row[detail_col]).strip()
         
         with st.container():
             # โชว์ข้อความสถานะพร้อมวงกลมสีไว้ข้างๆ เลขลำดับนอกปุ่ม
             st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{status_display}**")
             st.write(f"📌 {job_detail}")
             
-            # 🎯 ซ่อมแซมประโยคเงื่อนไขเช็กเบอร์โทรศัพท์ให้ยาวครบถ้วน ไม่โดนตัดท้ายแล้วครับ
-            phone_val = str(row[phone_col]).strip()
             if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
                 st.write(f"📞 เบอร์โทร: {phone_val}")
                         
