@@ -51,20 +51,21 @@ else:
         except:
             continue
             
-        # 🎯 ดึงข้อความดิบๆ ที่กรอกในแต่ละบรรทัดของคอลัมน์ D มาแสดงผลโดยตรง ไม่แปลงคำแล้ว
+        # ดึงข้อความสถานะในคอลัมน์ D มาตรวจสอบเพื่อใส่สัญลักษณ์วงกลมสี
         current_status = str(row[status_col]).strip()
-        if current_status == "nan" or current_status == "0" or current_status == "0.0":
-            current_status = ""
+        
+        # 🎯 เงื่อนไขตรวจสอบสัญลักษณ์วงกลมสีเขียว/แดง ตามที่น้ากำหนด
+        if current_status == "แก้ไขแล้ว" or "เสร็จ" in current_status:
+            status_display = "🟢 แก้ไขแล้ว"
+        else:
+            status_display = "🔴 ยังไม่แก้ไข"
             
         job_detail = str(row[detail_col]).strip()
         
         with st.container():
-            # โชว์ข้อความสถานะจากคอลัมน์ D ไว้ข้างๆ เลขลำดับนอกปุ่ม
-            st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{current_status}**")
+            # โชว์ข้อความสถานะพร้อมวงกลมสีไว้ข้างๆ เลขลำดับนอกปุ่ม
+            st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{status_display}**")
             st.write(f"📌 {job_detail}")
             
             phone_val = str(row[phone_col]).strip()
-            if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
-                st.write(f"📞 เบอร์โทร: {phone_val}")
-                        
-        st.divider()
+            if phone_val != "" and phone_val != "nan" and phone_val
