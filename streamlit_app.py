@@ -52,9 +52,4 @@ else:
             
         current_status = str(row[status_col]).strip()
         if current_status == "" or current_status == "nan" or current_status == "0":
-            current_status = "รอดำเนินการ"
-            
-        status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ รอดำเนินการ"
-        
-        with st.container():
-            col_text, col_status_
+            current_status
