@@ -25,7 +25,7 @@ except Exception as e:
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
+    st.warning("⚠️ 不พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
 else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
@@ -73,4 +73,26 @@ else:
                 
                 phone_val = str(row[phone_col]).strip()
                 if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
-                    st.write(f"📞 เบอร์โทร: {phone
+                    st.write(f"📞 เบอร์โทร: {phone_val}")
+            
+            with col_status_display:
+                # 🎯 ปุ่มเดี่ยวปุ่มเดียวตามสั่ง ไม่มีตัวแปรตัดคำขาดแล้วครับน้า
+                if st.button(button_label, key=f"btn_{job_id}_{index}", use_container_width=True):
+                    # สลับคำส่งข้อมูล 2 ทางให้ตรงกับตัวเลือกฟอร์มเป๊ะๆ
+                    target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
+                    
+                    payload = {
+                        ID_ENTRY: str(job_id),
+                        DETAIL_ENTRY: job_detail,
+                        STATUS_ENTRY: target_status
+                    }
+                    
+                    with st.spinner("กำลังบันทึก..."):
+                        try:
+                            requests.post(FORM_URL, data=payload, timeout=5)
+                        except:
+                            pass
+                        time.sleep(2.0)
+                        st.rerun()
+                        
+        st.divider()
