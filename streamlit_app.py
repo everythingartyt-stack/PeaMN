@@ -2,43 +2,43 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from streamlit_gsheets import GSheetsConnection
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
 
-# 1. ใช้ระบบเชื่อมต่อ gsheets สากลเพื่อความเสถียรสูงสุด
-conn = st.connection("gsheets", type=GSheetsConnection)
-
+# ฟังก์ชันดึงข้อมูลจาก Google Sheets (ฐานหลักดั้งเดิมตัวที่ทำงานได้ดีที่สุดและดึงสดเรียลไทม์)
 def get_latest_data():
-    # บังคับดึงค่าสดใหม่เรียลไทม์ (ttl=0) ทะลวงทุกระบบจำของเว็บ
-    df_raw = conn.read(ttl=0)
+    spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
+    # เติมตัวแปรเวลาสุ่มท้ายลิงก์เพื่อทลาย Cache ของ Google บังคับดึงข้อมูลล่าสุดร้อยเปอร์เซ็นต์
+    csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet=Sheet1&t={int(time.time())}"
+    
+    df_raw = pd.read_csv(csv_url)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
 
 try:
     df = get_latest_data()
 except Exception as e:
-    st.error("❌ ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบลิงก์ Google Sheets ในระบบ Advanced settings (Secrets)")
+    st.error("❌ ระบบดึงข้อมูลขัดข้อง: กรุณาตรวจสอบสิทธิ์การแชร์ Google Sheets")
     st.stop()
 
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลใน Google Sheets กรุณาตรวจสอบแท็บหน้างานหลักของคุณ")
+    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
 else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # ลิงก์ฟอร์มหลังบ้านของน้า
+    # ลิงก์ยิงข้อมูลเข้าหลังบ้าน Google Form ของน้า
     FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
     
-    # รหัส Entry ID ทั้ง 3 ช่องที่ตรงล็อก 100%
-    ID_ENTRY = "entry.1773581682"
-    DETAIL_ENTRY = "entry.1603121761"
-    STATUS_ENTRY = "entry.541799838"
+    # รหัส Entry ID ทั้ง 3 ช่องจากลิงก์จริงของน้าตรงล็อกร้อยเปอร์เซ็นต์
+    ID_ENTRY = "entry.1773581682"       # ช่องลำดับที่
+    DETAIL_ENTRY = "entry.1603121761"   # ช่องรายละเอียด
+    STATUS_ENTRY = "entry.541799838"     # ช่องสถานะงานจริง
 
     # วนลูปแสดงผลรายการทั้งหมด 1-20
     for index, row in df.iterrows():
@@ -54,7 +54,7 @@ else:
         current_status = str(row[status_col]).strip()
         job_detail = str(row[detail_col]).strip()
         
-        # เช็กคำสถานะจริงจากในตารางกูเกิลชีต
+        # ตรวจเช็กคำสถานะงานที่ดึงมาจากคอลัมน์ D ในตารางชีตของน้า
         if "ดำเนินการเสร็จสิ้น" in current_status or "เสร็จสิ้น" in current_status:
             is_completed = True
             status_icon = "✅ เสร็จสิ้น"
@@ -76,7 +76,9 @@ else:
             with col_status_display:
                 # ปุ่มอัปเดตสถานะ
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
+                    # สลับคำส่งข้อมูล 2 ทางให้ตรงกับตัวเลือกฟอร์มเป๊ะๆ
                     target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
+                    
                     payload = {
                         ID_ENTRY: str(job_id),
                         DETAIL_ENTRY: job_detail,
@@ -85,17 +87,13 @@ else:
                     
                     with st.spinner("กำลังบันทึก..."):
                         try:
-                            # ยิงข้อมูลเข้าฟอร์ม
                             requests.post(FORM_URL, data=payload, timeout=5)
                         except:
                             pass
-                        
-                        # 🚨 จุดตายสำคัญ: สั่งระเบิดล้างแคชหน้าเว็บทิ้งทันที เพื่อบังคับให้ดึงค่าล่าสุดมาแสดงผล
-                        st.cache_data.clear()
-                        time.sleep(1.5)
+                        time.sleep(2.0) # หน่วงเวลาเพิ่มเล็กน้อยเพื่อให้ระบบฟอร์มและชีตเขียนค่าสูตรทัน
                         st.rerun()
 
-                # บังคับแสดงผลแค่ 1 กล่องสถานะเดี่ยว ๆ ต่อครั้งฝั่งขวามือ
+                # บังคับหน้าจอให้เลือกโชว์แค่กล่องสีเดียวค้างไว้ฝั่งขวา (แดง หรือ เขียว)
                 if is_completed:
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
