@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit st
 import pandas as pd
 import requests
 import time
@@ -31,12 +31,13 @@ else:
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # ลิงก์ยิงส่งข้อมูลฟอร์มหลังบ้านของน้า
-    FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd_wMre6U9zY3z-K613M66C9g6x10lUWhR9o79oV49e4M38aw/formResponse"
+    # ลิงก์ส่งข้อมูลเข้าหลังบ้าน Google Form ของน้า
+    FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
     
-    # 🎯 แก้ไขรหัส Entry ID หลังบ้านให้ตรงกับลิงก์ฟอร์มจริงของน้า 100%
-    ID_ENTRY = "entry.460492823"
-    STATUS_ENTRY = "entry.680076043"
+    # 🎯 ปรับเลข Entry ID ให้ตรงตามลิงก์จริงของน้าแบบ 100%
+    ID_ENTRY = "entry.1773581682"       # ช่องลำดับที่
+    DETAIL_ENTRY = "entry.1603121761"   # ช่องรายละเอียด (ส่งค่าเดิมไปเก็บไว้ด้วย)
+    STATUS_ENTRY = "entry.541799838"     # ช่องสถานะจริง ๆ ตัวปัญหา
 
     # วนลูปแสดงผลรายการทั้งหมด 1-20
     for index, row in df.iterrows():
@@ -50,9 +51,10 @@ else:
             continue
             
         current_status = str(row[status_col]).strip()
+        job_detail = str(row[detail_col]).strip()
         
-        # เช็กสถานะคำว่า ดำเนินการเสร็จสิ้น จากในตารางสเปรดชีตของน้า
-        if current_status == "ดำเนินการเสร็จสิ้น" or current_status == "เสร็จสิ้น":
+        # ตรวจเช็กสถานะงานจากในตาราง Google Sheets
+        if "ดำเนินการเสร็จสิ้น" in current_status or "เสร็จสิ้น" in current_status:
             is_completed = True
             status_icon = "✅ เสร็จสิ้น"
         else:
@@ -64,7 +66,7 @@ else:
             
             with col_text:
                 st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
-                st.write(f"📌 {row[detail_col]}")
+                st.write(f"📌 {job_detail}")
                 
                 phone_val = str(row[phone_col]).strip()
                 if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
@@ -73,20 +75,24 @@ else:
             with col_status_display:
                 # ปุ่มอัปเดตสถานะ
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
-                    # ส่งค่าให้ตรงกับตัวเลือกในกูเกิลฟอร์มของน้าเป๊ะๆ
                     target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
-                    payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
+                    
+                    # 🎯 ส่งข้อมูลไปให้ครบทั้ง 3 ช่องตามที่ฟอร์มต้องการ
+                    payload = {
+                        ID_ENTRY: str(job_id),
+                        DETAIL_ENTRY: job_detail,
+                        STATUS_ENTRY: target_status
+                    }
                     
                     with st.spinner("กำลังบันทึก..."):
                         try:
-                            # ส่งคำสั่งโพสต์ไปที่ฟอร์มตัวจริงของน้า
                             requests.post(FORM_URL, data=payload, timeout=5)
                         except:
                             pass
                         time.sleep(1.5)
                         st.rerun()
 
-                # เลือกโชว์แค่กล่องสีเดียวค้างไว้ฝั่งขวาตามสถานะจริง
+                # ล็อกหน้าจอให้เลือกโชว์แค่กล่องสีเดียวค้างไว้ฝั่งขวา
                 if is_completed:
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
