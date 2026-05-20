@@ -65,7 +65,7 @@ else:
         with st.container():
             col_text, col_btn = st.columns([3, 1])
             with col_text:
-                st.write(f"**ลำดับที่ {job_id}** | Status: **{status_icon}**")
+                st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
                 st.write(f"📌 {row[detail_col]}")
                 
                 phone_val = str(row[phone_col]).strip()
@@ -73,7 +73,7 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_btn:
-                # ตรวจสอบเพื่อสลับปุ่มสถานะ
+                # 🔄 ระบบสลับปุ่มกดสลับค่าไป-มา
                 if current_status == "เสร็จสิ้น":
                     btn_label = "⏳ ปรับเป็นรอดำเนินการ"
                     target_status = "รอดำเนินการ"
@@ -85,11 +85,10 @@ else:
                     with st.spinner("กำลังบันทึกสถานะ..."):
                         payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
                         try:
-                            # ส่งคำสั่งยิงเข้า Google Form หลังบ้านอย่างเดียว
+                            # ยิงข้อมูลเข้าฟอร์มอย่างเดียว ปลอดภัย ไม่มีกล่องแดงแน่นอน
                             requests.post(FORM_URL, data=payload)
-                            # 🟢 เปลี่ยนคำตามที่ต้องการตรงนี้เรียบร้อยครับ
                             st.success("ดำเนินการเสร็จสิ้น!")
                             st.rerun()
                         except:
-                            st.error("การส่งข้อมูลขัดข้อง กรุณาลองใหมี่อีกครั้ง")
+                            st.error("การส่งข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้ง")
         st.divider()
