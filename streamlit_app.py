@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# ตั้งค่าหน้าเว็บให้เป็นแบบเต็มจอ (Wide)
-st.set_page_config(title="ระบบติดตามงานไฟฟ้า", layout="wide")
+# ลบ st.set_page_config ออกถาวร เพื่อแก้ปัญหาข้อจำกัดของเวอร์ชันเซิร์ฟเวอร์คลาวด์
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
@@ -42,7 +41,7 @@ else:
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # ลิงก์สำหรับส่งข้อมูลเข้า Google Form หลังบ้าน (แก้ไขเป็น formResponse เรียบร้อย)
+    # ลิงก์สำหรับส่งข้อมูลเข้า Google Form หลังบ้าน
     FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
     ID_ENTRY = "entry.1773581682"
     STATUS_ENTRY = "entry.1603121761"
