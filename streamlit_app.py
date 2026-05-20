@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
+import time
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
@@ -8,14 +9,12 @@ st.write("ทุกคนสามารถเข้าดูข้อมูล 
 # ฟังก์ชันดึงข้อมูลจาก Google Sheets (Sheet1)
 def get_latest_data():
     base_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-    
     if "/edit" in base_url:
         spreadsheet_id = base_url.split("/d/")[1].split("/edit")[0]
     else:
         spreadsheet_id = base_url.split("/d/")[1].split("?")[0]
         
     csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet=Sheet1"
-    
     df_raw = pd.read_csv(csv_url)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
@@ -27,12 +26,6 @@ except Exception as e:
     st.stop()
 
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
-
-# สร้างระบบความจำชั่วคราวในเว็บ เพื่อใช้ล็อกกล่องสีเขียวให้ค้างไว้
-if "success_id" not in st.session_state:
-    st.session_state.success_id = None
-if "success_msg" not in st.session_state:
-    st.session_state.success_msg = None
 
 if df.empty:
     st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
@@ -61,4 +54,38 @@ else:
         if current_status == "" or current_status == "nan" or current_status == "0":
             current_status = "รอดำเนินการ"
             
-        status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ ร
+        status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ รอดำเนินการ"
+        
+        with st.container():
+            col_text, col_status_display = st.columns([3, 1])
+            
+            with col_text:
+                st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
+                st.write(f"📌 {row[detail_col]}")
+                
+                phone_val = str(row[phone_col]).strip()
+                if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
+                    st.write(f"📞 เบอร์โทร: {phone_val}")
+            
+            with col_status_display:
+                # 1. ปุ่ม "อัปเดตสถานะ" สำหรับกดเปลี่ยนค่าไปมา
+                if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
+                    # สลับสถานะเพื่อยิงเข้าคลาวด์
+                    target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
+                    payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
+                    
+                    with st.spinner("กำลังบันทึก..."):
+                        try:
+                            requests.post(FORM_URL, data=payload, timeout=5)
+                            time.sleep(1.2) # หน่วงเวลาสั้นๆ ให้ Google Sheets อัปเดตสูตรทัน
+                            st.rerun()
+                        except:
+                            st.error("เน็ตเวิร์กกระตุก กรุณากดใหม่อีกครั้ง")
+
+                # 2. 🟢 กล่องสถานะแบบค้างถาวรแยกตามเงื่อนไข (ตามรูปถ่ายเป๊ะๆ)
+                if current_status == "เสร็จสิ้น":
+                    st.success("ดำเนินการเสร็จสิ้น!")
+                else:
+                    st.error("รอดำเนินการ")
+                    
+        st.divider()
