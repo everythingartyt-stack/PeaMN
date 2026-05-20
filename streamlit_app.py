@@ -2,33 +2,29 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from streamlit_gsheets import GSheetsConnection
-
-# ล้างแคชค้างสะสมชั่วคราว เพื่อแก้ปัญหากล่องเหลืองหน้าว่างเปล่า
-st.cache_data.clear()
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
 
-# เชื่อมต่อกับ Google Sheets ผ่าน Secrets ตัวเดิม
-conn = st.connection("gsheets", type=GSheetsConnection)
-
+# ฟังก์ชันดึงข้อมูลแบบ CSV ตรงจากลิงก์สเปรดชีตจริงของน้า (ตัวที่ทำงานได้ดีที่สุด)
 def get_latest_data():
-    # ดึงข้อมูลสดใหม่เรียลไทม์ ข้ามทุกระบบจำของเว็บ (ttl=0)
-    df_raw = conn.read(ttl=0)
+    spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
+    csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet=Sheet1"
+    
+    df_raw = pd.read_csv(csv_url)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
 
 try:
     df = get_latest_data()
 except Exception as e:
-    st.error("❌ ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบลิงก์ Google Sheets ในระบบ Advanced settings (Secrets)")
+    st.error("❌ ระบบดึงข้อมูลขัดข้อง: กรุณาตรวจสอบสิทธิ์การแชร์ Google Sheets")
     st.stop()
 
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลใน Google Sheets กรุณาตรวจสอบแท็บหน้างานหลักของคุณ")
+    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
 else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
@@ -68,20 +64,21 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_status_display:
-                # 1. ปุ่มกด "อัปเดตสถานะ" สลับค่าไปมา
+                # 1. ปุ่มชื่อคำว่า "อัปเดตสถานะ" ตามสั่ง สามารถกดสลับไปมาได้
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
                     target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
                     payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
                     
-                    with st.spinner("กำลังบันทึกสถานะ..."):
+                    with st.spinner("กำลังบันทึก..."):
                         try:
+                            # ส่งคำสั่งยิงไปที่ฟอร์มหลังบ้านเงียบๆ
                             requests.post(FORM_URL, data=payload, timeout=5)
                         except:
                             pass
-                        time.sleep(1.2)
+                        time.sleep(1.2) # หน่วงเวลาให้ Google Sheets คำนวณสูตรทัน
                         st.rerun()
 
-                # 2. กล่องแสดงสถานะค้างถาวรฝั่งขวา (แดง/เขียว)
+                # 2. แสดงกล่องสถานะค้างถาวรฝั่งขวา (แดง/เขียว) ตามข้อมูลจริงในชีต
                 if current_status == "เสร็จสิ้น":
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
