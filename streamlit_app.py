@@ -2,31 +2,32 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
+from streamlit_gsheets import GSheetsConnection
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
 
-# ฟังก์ชันดึงข้อมูลจาก Google Sheets (Sheet1) เจาะจงไอดีชีตจริงของน้า
+# เชื่อมต่อกับ Google Sheets ระบบสากลผ่าน Secrets ตัวเดิมที่เคยดึงตารางขึ้นชัวร์ๆ
+conn = st.connection("gsheets", type=GSheetsConnection)
+
 def get_latest_data():
-    spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
-    csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&sheet=Sheet1"
-    
-    # อ่านข้อมูลแบบเรียลไทม์สดใหม่ ดึงตารางมาโชว์แน่นอน
-    df_raw = pd.read_csv(csv_url)
+    # ดึงข้อมูลสดใหม่เรียลไทม์ (ttl=0)
+    df_raw = conn.read(ttl=0)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
 
 try:
     df = get_latest_data()
 except Exception as e:
-    st.error("❌ ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบว่าได้ตั้งค่าเปิดแชร์ Google Sheets เป็น 'ทุกคนที่มีลิงก์' (Anyone with the link) แล้วหรือยัง")
+    st.error("❌ ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบลิงก์ Google Sheets ในระบบ Advanced settings (Secrets)")
     st.stop()
 
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets ของน้า")
+    st.warning("⚠️ ไม่พบข้อมูลใน Google Sheets กรุณาตรวจสอบแท็บหน้างานหลักของคุณ")
 else:
+    # ค้นหาคอลัมน์อัตโนมัติจากหน้าชีตของน้า
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
@@ -36,7 +37,7 @@ else:
     ID_ENTRY = "entry.1773581682"
     STATUS_ENTRY = "entry.1603121761"
 
-    # วนลูปแสดงผลรายการทั้งหมด
+    # วนลูปแสดงผลรายการทั้งหมด 1-20
     for index, row in df.iterrows():
         try:
             job_id = str(row[id_col]).strip()
@@ -65,7 +66,7 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_status_display:
-                # ปุ่มชื่อ "อัปเดตสถานะ" ตามคำสั่งน้าเป๊ะๆ 
+                # 1. ปุ่มชื่อคำว่า "อัปเดตสถานะ" ตามคำสั่งเป๊ะๆ
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
                     target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
                     payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
@@ -78,7 +79,7 @@ else:
                         time.sleep(1.2)
                         st.rerun()
 
-                # กล่องสถานะโชว์ค้างฝั่งขวา (แดง/เขียว) สลับตามฐานข้อมูลจริง
+                # 2. กล่องแสดงสถานะค้างถาวรฝั่งขวา (แดง/เขียว) ตามสเปกใหม่ของน้า
                 if current_status == "เสร็จสิ้น":
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
