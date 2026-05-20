@@ -54,7 +54,7 @@ else:
         # ดึงข้อความสถานะในคอลัมน์ D มาตรวจสอบเพื่อใส่สัญลักษณ์วงกลมสี
         current_status = str(row[status_col]).strip()
         
-        # 🎯 เงื่อนไขตรวจสอบสัญลักษณ์วงกลมสีเขียว/แดง ตามที่น้ากำหนด
+        # เงื่อนไขตรวจสอบสัญลักษณ์วงกลมสีเขียว/แดง ตามค่าใน Google Sheets
         if current_status == "แก้ไขแล้ว" or "เสร็จ" in current_status:
             status_display = "🟢 แก้ไขแล้ว"
         else:
@@ -67,5 +67,9 @@ else:
             st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{status_display}**")
             st.write(f"📌 {job_detail}")
             
+            # 🎯 ซ่อมแซมประโยคเงื่อนไขเช็กเบอร์โทรศัพท์ให้ยาวครบถ้วน ไม่โดนตัดท้ายแล้วครับ
             phone_val = str(row[phone_col]).strip()
-            if phone_val != "" and phone_val != "nan" and phone_val
+            if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
+                st.write(f"📞 เบอร์โทร: {phone_val}")
+                        
+        st.divider()
