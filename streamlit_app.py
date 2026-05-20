@@ -4,7 +4,7 @@ import requests
 import time
 from streamlit_gsheets import GSheetsConnection
 
-# 🚨 คำสั่งล้างแคชค้างสะสมชั่วคราว เพื่อแก้ปัญหากล่องเหลืองหน้าว่างเปล่า
+# ล้างแคชค้างสะสมชั่วคราว เพื่อแก้ปัญหากล่องเหลืองหน้าว่างเปล่า
 st.cache_data.clear()
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
@@ -81,23 +81,7 @@ else:
                         time.sleep(1.2)
                         st.rerun()
 
-                # 2. กล่องแสดงสถานะค้างถาวรฝั่งขวา (แดง/เขียว) 
-                if current_status == "เสร็จสิ้น":
-                    st.success("ดำเนินการเสร็จสิ้น!")
-                else:
-                    st.error("รอดำเนินการ")
-                    
-        st.divider()                    payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
-                    
-                    with st.spinner("กำลังบันทึกสถานะ..."):
-                        try:
-                            requests.post(FORM_URL, data=payload, timeout=5)
-                        except:
-                            pass
-                        time.sleep(1.2)
-                        st.rerun()
-
-                # 2. กล่องแสดงสถานะค้างถาวรฝั่งขวา (แดง/เขียว) ตามสเปกใหม่ของน้า
+                # 2. กล่องแสดงสถานะค้างถาวรฝั่งขวา (แดง/เขียว)
                 if current_status == "เสร็จสิ้น":
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
