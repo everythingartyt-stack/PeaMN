@@ -11,7 +11,7 @@ def get_latest_data():
     spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
     csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&sheet=Sheet1"
     
-    # อ่านข้อมูลแบบเรียลไทม์สดใหม่ ดึงตารางกลับมาโชว์ 100%
+    # อ่านข้อมูลแบบเรียลไทม์สดใหม่ ดึงตารางมาโชว์แน่นอน
     df_raw = pd.read_csv(csv_url)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
@@ -65,6 +65,7 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_status_display:
+                # ปุ่มชื่อ "อัปเดตสถานะ" ตามคำสั่งน้าเป๊ะๆ 
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
                     target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
                     payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
@@ -77,6 +78,7 @@ else:
                         time.sleep(1.2)
                         st.rerun()
 
+                # กล่องสถานะโชว์ค้างฝั่งขวา (แดง/เขียว) สลับตามฐานข้อมูลจริง
                 if current_status == "เสร็จสิ้น":
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
