@@ -58,9 +58,11 @@ else:
         if "ดำเนินการเสร็จสิ้น" in current_status or "เสร็จสิ้น" in current_status:
             is_completed = True
             status_icon = "✅ เสร็จสิ้น"
+            button_label = "🔄 สลับเป็นรอดำเนินการ"  # ข้อความบนปุ่มเมื่อเสร็จแล้ว
         else:
             is_completed = False
             status_icon = "⏳ รอดำเนินการ"
+            button_label = "🟢 คลิกเพื่อเสร็จงาน"      # ข้อความบนปุ่มเมื่อยังไม่เสร็จ
         
         with st.container():
             col_text, col_status_display = st.columns([3, 1])
@@ -71,32 +73,4 @@ else:
                 
                 phone_val = str(row[phone_col]).strip()
                 if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
-                    st.write(f"📞 เบอร์โทร: {phone_val}")
-            
-            with col_status_display:
-                # ปุ่มอัปเดตสถานะ
-                if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
-                    # สลับคำส่งข้อมูล 2 ทางให้ตรงกับตัวเลือกฟอร์มเป๊ะๆ
-                    target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
-                    
-                    payload = {
-                        ID_ENTRY: str(job_id),
-                        DETAIL_ENTRY: job_detail,
-                        STATUS_ENTRY: target_status
-                    }
-                    
-                    with st.spinner("กำลังบันทึก..."):
-                        try:
-                            requests.post(FORM_URL, data=payload, timeout=5)
-                        except:
-                            pass
-                        time.sleep(2.0) # หน่วงเวลาเพิ่มเล็กน้อยเพื่อให้ระบบฟอร์มและชีตเขียนค่าสูตรทัน
-                        st.rerun()
-
-                # บังคับหน้าจอให้เลือกโชว์แค่กล่องสีเดียวค้างไว้ฝั่งขวา (แดง หรือ เขียว)
-                if is_completed:
-                    st.success("ดำเนินการเสร็จสิ้น!")
-                else:
-                    st.error("รอดำเนินการ")
-                    
-        st.divider()
+                    st.write(f"📞 เบอร์โทร: {phone
