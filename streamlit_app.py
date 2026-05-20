@@ -57,35 +57,4 @@ else:
         status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ รอดำเนินการ"
         
         with st.container():
-            col_text, col_status_display = st.columns([3, 1])
-            
-            with col_text:
-                st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
-                st.write(f"📌 {row[detail_col]}")
-                
-                phone_val = str(row[phone_col]).strip()
-                if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
-                    st.write(f"📞 เบอร์โทร: {phone_val}")
-            
-            with col_status_display:
-                # 1. ปุ่ม "อัปเดตสถานะ" สำหรับกดเปลี่ยนค่าไปมา
-                if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
-                    # สลับสถานะเพื่อยิงเข้าคลาวด์
-                    target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
-                    payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
-                    
-                    with st.spinner("กำลังบันทึก..."):
-                        try:
-                            requests.post(FORM_URL, data=payload, timeout=5)
-                            time.sleep(1.2) # หน่วงเวลาสั้นๆ ให้ Google Sheets อัปเดตสูตรทัน
-                            st.rerun()
-                        except:
-                            st.error("เน็ตเวิร์กกระตุก กรุณากดใหม่อีกครั้ง")
-
-                # 2. 🟢 กล่องสถานะแบบค้างถาวรแยกตามเงื่อนไข (ตามรูปถ่ายเป๊ะๆ)
-                if current_status == "เสร็จสิ้น":
-                    st.success("ดำเนินการเสร็จสิ้น!")
-                else:
-                    st.error("รอดำเนินการ")
-                    
-        st.divider()
+            col_text, col_status_
