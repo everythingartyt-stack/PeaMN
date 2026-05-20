@@ -5,7 +5,7 @@ import time
 st.title("⚡ ระบบติดตามงานไฟฟ้าขัดข้อง")
 st.write("หน้าจอแสดงผลและติดตามสถานะงานล่าสุดจาก Google Sheets")
 
-# 🎯 วางปุ่มอัปเดตสถานะงานทั้งหมดไว้ด้านบนสุด กดทีเดียวดึงค่าใหม่ให้ทุกแถวพร้อมกัน
+# 🎯 ปุ่มอัปเดตสถานะงานทั้งหมดไว้ด้านบนสุด กดทีเดียวดึงค่าใหม่ให้ทุกแถวพร้อมกัน
 if st.button("🔄 คลิกเพื่ออัปเดตสถานะงานทั้งหมด", use_container_width=True):
     with st.spinner("กำลังดึงข้อมูลล่าสุดจาก Google Sheets..."):
         # ล้างแคชหน้าเว็บเพื่อบังคับให้แอปดึงค่าใหม่ล่าสุดทันที
@@ -38,4 +38,33 @@ else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
-    status_col = "สถานะ
+    status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
+
+    # วนลูปแสดงผลรายการทั้งหมด 1-20
+    for index, row in df.iterrows():
+        try:
+            job_id = str(row[id_col]).strip()
+            if job_id == "" or job_id == "nan":
+                continue
+            if "." in job_id:
+                job_id = str(int(float(job_id)))
+        except:
+            continue
+            
+        # 🎯 ดึงข้อความดิบๆ ที่กรอกในแต่ละบรรทัดของคอลัมน์ D มาแสดงผลโดยตรง ไม่แปลงคำแล้ว
+        current_status = str(row[status_col]).strip()
+        if current_status == "nan" or current_status == "0" or current_status == "0.0":
+            current_status = ""
+            
+        job_detail = str(row[detail_col]).strip()
+        
+        with st.container():
+            # โชว์ข้อความสถานะจากคอลัมน์ D ไว้ข้างๆ เลขลำดับนอกปุ่ม
+            st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{current_status}**")
+            st.write(f"📌 {job_detail}")
+            
+            phone_val = str(row[phone_col]).strip()
+            if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
+                st.write(f"📞 เบอร์โทร: {phone_val}")
+                        
+        st.divider()
