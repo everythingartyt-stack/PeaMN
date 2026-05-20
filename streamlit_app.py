@@ -40,7 +40,7 @@ else:
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # วนลูปแสดงผลรายการ
+    # วนลูปแสดงผลรายการทั้งหมดแบบอัตโนมัติ (ขยายตามจำนวนแถวใน Sheets ทันที)
     for index, row in df.iterrows():
         try:
             job_id = str(row[id_col]).strip()
@@ -54,7 +54,7 @@ else:
         job_detail = str(row[detail_col]).strip()
         phone_val = str(row[phone_col]).strip()
         
-        # 🎯 ล็อกเงื่อนไข: ถ้าคอลัมน์ B (รายละเอียด) และคอลัมน์ C (เบอร์โทร) ว่างทั้งคู่ หรือเป็นค่าว่างเปล่า จะไม่โชว์บนหน้าเว็บ
+        # คัดกรองเงื่อนไข: ถ้าคอลัมน์รายละเอียด และ คอลัมน์เบอร์โทร ว่างทั้งคู่ จะไม่โชว์บนหน้าเว็บ
         if (job_detail == "" or job_detail == "nan") and (phone_val == "" or phone_val == "nan" or phone_val == "0.0" or phone_val == "0"):
             continue
             
@@ -69,7 +69,7 @@ else:
         
         with st.container():
             # โชว์ข้อความสถานะพร้อมวงกลมสีไว้ข้างๆ เลขลำดับนอกปุ่ม
-            st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{status_display}**")
+            st.write(f"**ลำดับที่ {job_id}** | Status: **{status_display}**")
             st.write(f"📌 {job_detail}")
             
             if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
