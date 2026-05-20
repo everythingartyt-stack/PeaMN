@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
-import requests
 import time
 
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
-st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
+st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อดูสถานะล่าสุดของงานได้ทันที")
 
-# ฟังก์ชันดึงข้อมูลจาก Google Sheets (ฐานหลักดั้งเดิมตัวที่ทำงานได้ดีที่สุดและดึงสดเรียลไทม์)
+# ฟังก์ชันดึงข้อมูลจาก Google Sheets (ฐานหลักดั้งเดิม ดึงสดเรียลไทม์ทะลวง Cache)
 def get_latest_data():
     spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
-    # เติมตัวแปรเวลาสุ่มท้ายลิงก์เพื่อทลาย Cache ของ Google บังคับดึงข้อมูลล่าสุดร้อยเปอร์เซ็นต์
+    # เติมตัวแปรเวลาสุ่มท้ายลิงก์เพื่อบังคับให้กูเกิลส่งข้อมูลปัจจุบันออกมาเสมอ ไม่ค้างแคช
     csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet=Sheet1&t={int(time.time())}"
     
     df_raw = pd.read_csv(csv_url)
@@ -25,20 +24,12 @@ except Exception as e:
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ 不พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
+    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
 else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
-
-    # ลิงก์ยิงข้อมูลเข้าหลังบ้าน Google Form ของน้า
-    FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
-    
-    # รหัส Entry ID ทั้ง 3 ช่องจากลิงก์จริงของน้าตรงล็อกร้อยเปอร์เซ็นต์
-    ID_ENTRY = "entry.1773581682"       # ช่องลำดับที่
-    DETAIL_ENTRY = "entry.1603121761"   # ช่องรายละเอียด
-    STATUS_ENTRY = "entry.541799838"     # ช่องสถานะงานจริง
 
     # วนลูปแสดงผลรายการทั้งหมด 1-20
     for index, row in df.iterrows():
@@ -54,45 +45,27 @@ else:
         current_status = str(row[status_col]).strip()
         job_detail = str(row[detail_col]).strip()
         
-        # ตรวจเช็กคำสถานะงานที่ดึงมาจากคอลัมน์ D ในตารางชีตของน้า
+        # 🎯 ดึงสถานะจากคอลัมน์ D มาแปรเป็นข้อความโชว์นอกปุ่มตรงๆ
         if "ดำเนินการเสร็จสิ้น" in current_status or "เสร็จสิ้น" in current_status:
-            is_completed = True
-            status_icon = "✅ เสร็จสิ้น"
-            button_label = "🔄 สลับเป็นรอดำเนินการ"  # ข้อความบนปุ่มเมื่อเสร็จแล้ว
+            status_display = "✅ เสร็จสิ้น"
         else:
-            is_completed = False
-            status_icon = "⏳ รอดำเนินการ"
-            button_label = "🟢 คลิกเพื่อเสร็จงาน"      # ข้อความบนปุ่มเมื่อยังไม่เสร็จ
+            status_display = "⏳ รอดำเนินการ"
         
         with st.container():
-            col_text, col_status_display = st.columns([3, 1])
+            # 🎯 แสดงผลข้อมูลงานและสถานะปัจจุบันเด่นๆ ด้านบนนอกปุ่ม
+            st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_display}**")
+            st.write(f"📌 {job_detail}")
             
-            with col_text:
-                st.write(f"**ลำดับที่ {job_id}** | สถานะปัจจุบัน: **{status_icon}**")
-                st.write(f"📌 {job_detail}")
-                
-                phone_val = str(row[phone_col]).strip()
-                if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
-                    st.write(f"📞 เบอร์โทร: {phone_val}")
+            phone_val = str(row[phone_col]).strip()
+            if phone_val != "" and phone_val != "nan" and phone_val != "0.0" and phone_val != "0":
+                st.write(f"📞 เบอร์โทร: {phone_val}")
             
-            with col_status_display:
-                # 🎯 ปุ่มเดี่ยวปุ่มเดียวตามสั่ง ไม่มีตัวแปรตัดคำขาดแล้วครับน้า
-                if st.button(button_label, key=f"btn_{job_id}_{index}", use_container_width=True):
-                    # สลับคำส่งข้อมูล 2 ทางให้ตรงกับตัวเลือกฟอร์มเป๊ะๆ
-                    target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
-                    
-                    payload = {
-                        ID_ENTRY: str(job_id),
-                        DETAIL_ENTRY: job_detail,
-                        STATUS_ENTRY: target_status
-                    }
-                    
-                    with st.spinner("กำลังบันทึก..."):
-                        try:
-                            requests.post(FORM_URL, data=payload, timeout=5)
-                        except:
-                            pass
-                        time.sleep(2.0)
-                        st.rerun()
+            # 🎯 วางปุ่ม "อัปเดต" เดี่ยวๆ ไว้ด้านล่างรายการ เพื่อใช้กดดึงข้อมูลใหม่จากคอลัมน์ D
+            if st.button("อัปเดต", key=f"btn_{job_id}_{index}"):
+                with st.spinner("กำลังดึงข้อมูลล่าสุด..."):
+                    # ล้างแคชหน้าเว็บเพื่อให้ระบบดึงค่าใหม่ล่าสุดจาก Google Sheets ทันที
+                    st.cache_data.clear()
+                    time.sleep(1.0)
+                    st.rerun()
                         
         st.divider()
