@@ -7,11 +7,10 @@ from streamlit_gsheets import GSheetsConnection
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
 
-# เชื่อมต่อกับ Google Sheets ระบบเดิมที่เคยดึงผ่านชัวร์ๆ
+# เชื่อมต่อกับ Google Sheets ระบบเดิมที่ดึงข้อมูลขึ้นชัวร์ๆ
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def get_latest_data():
-    # บังคับดึงข้อมูลสดใหม่เสมอ (ttl=0)
     df_raw = conn.read(ttl=0)
     df_raw.columns = df_raw.columns.str.strip()
     return df_raw.fillna("")
@@ -32,7 +31,6 @@ else:
     phone_col = "เบอร์โทร" if "เบอร์โทร" in df.columns else df.columns[2]
     status_col = "สถานะ" if "สถานะ" in df.columns else df.columns[3]
 
-    # ลิงก์ Google Form ของน้าสำหรับส่งข้อมูลหลังบ้าน
     FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd7tiGJnN9bnwOU9ZHToWeF2_M8GBGYKXbWvlgt9jWhD-A5WQ/formResponse"
     ID_ENTRY = "entry.1773581682"
     STATUS_ENTRY = "entry.1603121761"
@@ -66,4 +64,22 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_status_display:
-                # 1. เปลี่ยนชื่อปุ่มเป็นคำว่า "อัปเดต
+                # จัดระเบียบย่อหน้าตรงส่วนปุ่มกดและกล่องข้อความค้างฝั่งขวาให้ตรงล็อกเป๊ะๆ
+                if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
+                    target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
+                    payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
+                    
+                    with st.spinner("กำลังบันทึกสถานะ..."):
+                        try:
+                            requests.post(FORM_URL, data=payload, timeout=5)
+                        except:
+                            pass
+                        time.sleep(1.2)
+                        st.rerun()
+
+                if current_status == "เสร็จสิ้น":
+                    st.success("ดำเนินการเสร็จสิ้น!")
+                else:
+                    st.error("รอดำเนินการ")
+                    
+        st.divider()
