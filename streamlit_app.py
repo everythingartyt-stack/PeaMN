@@ -6,10 +6,9 @@ import time
 st.title("⚡ ระบบติดตามและอัปเดตงานไฟฟ้าขัดข้อง")
 st.write("ทุกคนสามารถเข้าดูข้อมูล และคลิกปุ่มเพื่อเปลี่ยนสถานะงานได้ทันที")
 
-# ฟังก์ชันดึงข้อมูลหลัก (ปรับปรุงการทะลวง Cache ของฝั่ง Google Sheets เพื่อให้สลับกล่องสีทันที)
+# ฟังก์ชันดึงข้อมูลจาก Google Sheets (ฐานหลักตัวที่ทำงานได้ดีที่สุด)
 def get_latest_data():
     spreadsheet_id = "10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4"
-    # เติมตัวแปรเวลา &t= ลงไปท้ายลิงก์ดั้งเดิม เพื่อบังคับให้ Google ส่งค่าล่าสุดร้อยเปอร์เซ็นต์
     csv_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&sheet=Sheet1&t={int(time.time())}"
     
     df_raw = pd.read_csv(csv_url)
@@ -25,7 +24,7 @@ except Exception as e:
 st.subheader("📋 รายการแจ้งเหตุและจัดการสถานะ")
 
 if df.empty:
-    st.warning("⚠️ ไม่พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
+    st.warning("⚠️ 不พบข้อมูลในแท็บ Sheet1 กรุณาตรวจสอบข้อมูลใน Google Sheets")
 else:
     id_col = "ลำดับที่" if "ลำดับที่" in df.columns else df.columns[0]
     detail_col = "รายละเอียด" if "รายละเอียด" in df.columns else df.columns[1]
@@ -48,10 +47,14 @@ else:
             continue
             
         current_status = str(row[status_col]).strip()
-        if current_status == "" or current_status == "nan" or current_status == "0":
-            current_status = "รอดำเนินการ"
-            
-        status_icon = "✅ เสร็จสิ้น" if current_status == "เสร็จสิ้น" else "⏳ รอดำเนินการ"
+        
+        # ปรับการเช็กคำสถานะให้ตรงกับโครงสร้าง Google Sheets ของน้า
+        if current_status == "" or current_status == "nan" or current_status == "0" or current_status == "รอดำเนินการ":
+            is_completed = False
+            status_icon = "⏳ รอดำเนินการ"
+        else:
+            is_completed = True
+            status_icon = "✅ เสร็จสิ้น"
         
         with st.container():
             col_text, col_status_display = st.columns([3, 1])
@@ -65,9 +68,10 @@ else:
                     st.write(f"📞 เบอร์โทร: {phone_val}")
             
             with col_status_display:
-                # 1. ปุ่มชื่อคำว่า "อัปเดตสถานะ" ทำหน้าที่ส่งค่าไปฟอร์ม
+                # ปุ่มอัปเดตสถานะ
                 if st.button("อัปเดตสถานะ", key=f"btn_{job_id}_{index}"):
-                    target_status = "รอดำเนินการ" if current_status == "เสร็จสิ้น" else "เสร็จสิ้น"
+                    # 🟢 แก้ไขตรงนี้: ส่งคำว่า "ดำเนินการเสร็จสิ้น" หรือ "รอดำเนินการ" ให้ตรงกับช้อยส์ในฟอร์มของน้าเป๊ะๆ
+                    target_status = "รอดำเนินการ" if is_completed else "ดำเนินการเสร็จสิ้น"
                     payload = {ID_ENTRY: str(job_id), STATUS_ENTRY: target_status}
                     
                     with st.spinner("กำลังบันทึก..."):
@@ -75,11 +79,11 @@ else:
                             requests.post(FORM_URL, data=payload, timeout=5)
                         except:
                             pass
-                        time.sleep(2.0) # หน่วงเวลาเพิ่มเล็กน้อย เพื่อให้ Google Sheets ฝั่งเซิร์ฟเวอร์อัปเดตสูตรเสร็จสมบูรณ์
+                        time.sleep(1.5)
                         st.rerun()
 
-                # 2. แสดงกล่องสถานะเดี่ยว ๆ 1 กล่องต่อครั้งตามสถานะจริง
-                if current_status == "เสร็จสิ้น":
+                # เลือกโชว์แค่กล่องสีเดียวค้างไว้ตามสถานะปัจจุบัน
+                if is_completed:
                     st.success("ดำเนินการเสร็จสิ้น!")
                 else:
                     st.error("รอดำเนินการ")
