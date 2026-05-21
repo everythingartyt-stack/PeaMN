@@ -51,7 +51,6 @@ else:
     for index, row in df.iterrows():
         try:
             job_id = str(row[id_col]).strip()
-            # ตัดเศษทศนิยมที่อาจเกิดขึ้นจากระบบล็อกคอลัมน์ออกไป (.0)
             if "." in job_id:
                 job_id = str(int(float(job_id)))
             if job_id == "" or job_id == "nan":
@@ -62,18 +61,17 @@ else:
         job_detail = str(row[detail_col]).strip()
         phone_val = str(row[phone_col]).strip()
         
-        # ตัวดักจับช่องว่าง: ล้างค่าตัวอักษรขยะและคำแฝงออกทั้งหมดก่อนเช็ค เพื่อซ่อนแถวว่างอัตโนมัติ
+        # ตัวดักจับช่องว่าง ซ่อนแถวว่างอัตโนมัติ
         check_detail = job_detail.lower().replace("nan", "").replace(".0", "").strip()
         check_phone = phone_val.lower().replace("nan", "").replace(".0", "").replace("0", "").strip()
         
-        # หากทั้งช่องรายละเอียดและเบอร์โทรไม่มีข้อความอยู่เลย ให้ข้ามบรรทัดนี้ไปทันทีไม่เอามาโชว์
         if check_detail == "" and check_phone == "":
             continue
             
-        # ดึงข้อความสถานะในคอลัมน์ D มาตรวจสอบเพื่อใส่สัญลักษณ์วงกลมสี
+        # 🎯 ดึงข้อความสถานะและเคลียร์ช่องไฟขยะออกให้หมด
         current_status = str(row[status_col]).strip()
         
-        # 🎯 เช็กสถานะจริงจากชีตเพื่อเตรียมคัดกรอง (ขยับมาอยู่ตรงนี้เพื่อให้ปุ่มกรองทำงานได้ถูกต้อง)
+        # 🎯 ตรวจสอบสถานะจริงด้วยภาษาไทยแท้แบบเป๊ะ ๆ 
         if current_status == "แก้ไขแล้ว" or "เสร็จ" in current_status:
             is_job_done = True
             status_display = "🟢 แก้ไขแล้ว"
@@ -81,21 +79,19 @@ else:
             is_job_done = False
             status_display = "🔴 ยังไม่แก้ไข"
         
-        # 🎯 เงื่อนไขตัวกรองปุ่มเลือกสลับโหมดการดูงาน (ซ่อมแซมให้กรองแม่นยำแล้วครับ)
-        if filter_option == "ดูเฉพาะงานที่ยังไม่แก้ไข 🔴" and is_job_done:
+        # 🎯 ล็อกเงื่อนไขการกรองแบบเข้มงวด (ตรวจสอบตัวแปร filter_option ตรงๆ)
+        if filter_option == "ดูเฉพาะงานที่ยังไม่แก้ไข 🔴" and is_job_done == True:
             continue
-        elif filter_option == "ดูเฉพาะงานที่แก้ไขแล้ว 🟢" and not is_job_done:
+        elif filter_option == "ดูเฉพาะงานที่แก้ไขแล้ว 🟢" and is_job_done == False:
             continue
             
         with st.container():
             st.write(f"**ลำดับที่ {job_id}** | สถานะ: **{status_display}**")
             st.write(f"📌 {job_detail}")
             
-            # ล้างเงื่อนไขการโชว์เบอร์โทรไม่ให้ดึงเลขศูนย์เดี่ยวหรือค่าว่างขึ้นมาแสดงผล
             if check_phone != "":
                 st.write(f"📞 เบอร์โทร: {phone_val}")
             
-            # ปุ่มลิงก์ทางลัดเปิดหน้า Google Sheets
             st.link_button(
                 "📝 กดเปิดเพื่อเปลี่ยนสถานะใน Google Sheets", 
                 "https://docs.google.com/spreadsheets/d/10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4/edit", 
