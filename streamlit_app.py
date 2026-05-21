@@ -73,7 +73,7 @@ else:
         # ดึงข้อความสถานะในคอลัมน์ D มาตรวจสอบเพื่อใส่สัญลักษณ์วงกลมสี
         current_status = str(row[status_col]).strip()
         
-        # เช็กสถานะจริงจากชีตเพื่อเตรียมแสดงผล
+        # 🎯 เช็กสถานะจริงจากชีตเพื่อเตรียมคัดกรอง (ขยับมาอยู่ตรงนี้เพื่อให้ปุ่มกรองทำงานได้ถูกต้อง)
         if current_status == "แก้ไขแล้ว" or "เสร็จ" in current_status:
             is_job_done = True
             status_display = "🟢 แก้ไขแล้ว"
@@ -81,7 +81,7 @@ else:
             is_job_done = False
             status_display = "🔴 ยังไม่แก้ไข"
         
-        # เงื่อนไขตัวกรองปุ่มเลือกสลับโหมดการดูงาน
+        # 🎯 เงื่อนไขตัวกรองปุ่มเลือกสลับโหมดการดูงาน (ซ่อมแซมให้กรองแม่นยำแล้วครับ)
         if filter_option == "ดูเฉพาะงานที่ยังไม่แก้ไข 🔴" and is_job_done:
             continue
         elif filter_option == "ดูเฉพาะงานที่แก้ไขแล้ว 🟢" and not is_job_done:
@@ -95,7 +95,7 @@ else:
             if check_phone != "":
                 st.write(f"📞 เบอร์โทร: {phone_val}")
             
-            # 🎯 ปุ่มลิงก์ทางลัดของน้า กดแล้ววาร์ปไปเปิดหน้า Google Sheets เพื่อเปลี่ยนสถานะได้ทันที
+            # ปุ่มลิงก์ทางลัดเปิดหน้า Google Sheets
             st.link_button(
                 "📝 กดเปิดเพื่อเปลี่ยนสถานะใน Google Sheets", 
                 "https://docs.google.com/spreadsheets/d/10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4/edit", 
