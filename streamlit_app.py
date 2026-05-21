@@ -5,7 +5,7 @@ import time
 st.title("⚡ ระบบติดตามงานไฟฟ้าขัดข้อง")
 st.write("หน้าจอแสดงผลและติดตามสถานะงานล่าสุดจาก Google Sheets")
 
-# 🎯 ปุ่มอัปเดตเวอร์ชันกระชับสั้น
+# 🎯 ปุ่มอัปเดตเวอร์ชันกระชับสั้น ด้านบนสุด
 if st.button("🔄 อัปเดต", use_container_width=True):
     with st.spinner("กำลังดึงข้อมูลล่าสุดจาก Google Sheets..."):
         st.cache_data.clear()
@@ -62,7 +62,7 @@ else:
         job_detail = str(row[detail_col]).strip()
         phone_val = str(row[phone_col]).strip()
         
-        # 🎯 ตัวดักจับช่องว่างเวอร์ชันอัปเกรดสูงสุด: ล้างค่าตัวอักษรขยะและคำแฝงออกทั้งหมดก่อนเช็ค
+        # ตัวดักจับช่องว่าง: ล้างค่าตัวอักษรขยะและคำแฝงออกทั้งหมดก่อนเช็ค เพื่อซ่อนแถวว่างอัตโนมัติ
         check_detail = job_detail.lower().replace("nan", "").replace(".0", "").strip()
         check_phone = phone_val.lower().replace("nan", "").replace(".0", "").replace("0", "").strip()
         
@@ -81,7 +81,7 @@ else:
             is_job_done = False
             status_display = "🔴 ยังไม่แก้ไข"
         
-        # เงื่อนไขตัวกรองปุ่มเลือกสลับโหมด
+        # เงื่อนไขตัวกรองปุ่มเลือกสลับโหมดการดูงาน
         if filter_option == "ดูเฉพาะงานที่ยังไม่แก้ไข 🔴" and is_job_done:
             continue
         elif filter_option == "ดูเฉพาะงานที่แก้ไขแล้ว 🟢" and not is_job_done:
@@ -94,5 +94,12 @@ else:
             # ล้างเงื่อนไขการโชว์เบอร์โทรไม่ให้ดึงเลขศูนย์เดี่ยวหรือค่าว่างขึ้นมาแสดงผล
             if check_phone != "":
                 st.write(f"📞 เบอร์โทร: {phone_val}")
+            
+            # 🎯 ปุ่มลิงก์ทางลัดของน้า กดแล้ววาร์ปไปเปิดหน้า Google Sheets เพื่อเปลี่ยนสถานะได้ทันที
+            st.link_button(
+                "📝 กดเปิดเพื่อเปลี่ยนสถานะใน Google Sheets", 
+                "https://docs.google.com/spreadsheets/d/10LJJzAoMcWfWnkcZrlEEyhogIEfmnoGzx7QsgG_2yg4/edit", 
+                use_container_width=True
+            )
                         
         st.divider()
